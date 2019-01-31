@@ -7,17 +7,20 @@
 ##        Output: ggplot
 
 library(ggplot2)
-
+ 
 ext_from_mod <- function(...){
-  tmp <- vapply(as.list((match.call()[-1])), deparse, FUN.VALUE = character(1))
-  if (all(sapply(tmp, function(x) {'lm' %in% class(get(x)) })) == FALSE){
+  mod_name_list <- vapply(match.call(expand.dots = F)$..., deparse, character(1))
+  if (all(sapply(mod_name_list, function(x) {'lm' %in% class(get(x)) })) == FALSE){
     stop('input is not in lm class')
   }
+  
   list_mod <- list(...)
   # print(tmp); mod_1$call$formula; mod_1$call$data
   # check_list <- sapply(list_mod, function(x) {
   #   print(x)
   # })
+  
+  ### start fruther input checking
   check_list <- sapply(list_mod, function(x){
     # print(x)
     data_applied <- deparse(x$call$data)
@@ -42,6 +45,21 @@ ext_from_mod <- function(...){
   if ( length(unique(unlist(check_list[2, ])) ) > 1){
     stop('Different Y across models cannot be compared')
   }
+  ### Done input checking
+  
+  res_Y <- unlist(lapply(list_mod, resid))
+  fit_X <- lapply(list_mod, fitted)      # Extract fitted values
+  num_Rep <- sapply(fit_X, length)
+  # print(num_Rep)
+  obs_ord_X <- unlist(lapply(num_Rep, function(x) seq(x)))
+  # print(mod_name_list)
+  model_X <- rep(mod_name_list, num_Rep)
+  # print(model_X)
+  
+  df_group <- data.frame(res_Y, fit_X = unlist(fit_X), 
+                         obs_ord_X, model_X)
+  # head(df_group)
+  # tail(df_group)
 } 
 
 # ------------------------------------------------------------------------------
